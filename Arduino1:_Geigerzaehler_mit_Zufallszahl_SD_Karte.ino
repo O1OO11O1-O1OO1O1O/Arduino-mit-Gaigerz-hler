@@ -1,146 +1,140 @@
 #include <SPI.h>
 #include <SD.h>
-//#include <Wire.h> 
-//#include <LiquidCrystal_I2C.h>
 
 const int chipSelect = 10;
-  String zahlenreihe[8];
-  unsigned long zeit; 
-  unsigned long milliseks;
-  int storage;
-  int index;
-  String zwischenergebnis;
-
-
-//LiquidCrystal_I2C lcd(0x27, 16, 2);
+String zahlenreihe[8];
+unsigned long zeit; 
+unsigned long milliseks;
+int index;
+long int laenge = 0;
 
 void setup() {
 
   delay(3000);
-  
-  //lcd.setCursor(0,0);
-  //lcd.begin();
-	//lcd.backlight();
-	//lcd.print("");
-  //lcd.setCursor(0,1);
-  //lcd.clear()
-  
 
+  bool check = false;
   Serial.begin(9600);
+  
   pinMode(2, INPUT);
-  pinMode(3,OUTPUT);
-  pinMode(4,OUTPUT);
-  //lcd.print("Suche SD Karte..");
-  Serial.println("Suche SD Karte ..."); //ln
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+
+  pinMode(6, INPUT);
+  pinMode(7, INPUT);
+  pinMode(8, INPUT);
+  pinMode(9, INPUT);
+  
+  Serial.println("Suche SD Karte ...");
   delay(3000);
   
   if (!SD.begin(chipSelect)) {
-    //lcd.clear();
-    //lcd.print("SD Karte nicht");
-    //lcd.setCursor(0,1);
-    //lcd.print("gefunden!");
-    Serial.println("SD Karte nicht gefunden!"); //ln
+
+    Serial.println("SD Karte nicht gefunden!");
     return;
   }
-  //lcd.clear();
-  //lcd.print("SD Karte");
-  //lcd.setCursor(0,1);
-  //lcd.print("gefunden!");
+  Serial.println("SD Karte gefunden!");
+  delay(3000);
+  Serial.println("clear");
+  delay(3000);
   
-  Serial.println("SD Karte gefunden!"); //ln
+  Serial.println("Anzahl KeySets:");
+  delay(1500);
+  Serial.print(laenge);
+  Serial.println("                ");
 
+  while (!check) {
+
+    if (digitalRead(9) == HIGH) {
+      laenge = laenge + 1;
+      Serial.print(laenge);
+      Serial.println("                ");
+      delay(1500);
+    }
+
+    if (digitalRead(7) == HIGH) {
+
+      if (laenge != 0) {
+        laenge = laenge - 1;
+      }
+      Serial.print(laenge);
+      Serial.println("                ");
+      delay(1500);
+    }
+
+    if (digitalRead(8) == HIGH) {
+      check = true;
+      Serial.print(laenge);
+      Serial.println("                Q");
+      delay(500);
+    }
+  }
+  laenge = laenge * 312;
+  delay(2000);
   attachInterrupt(digitalPinToInterrupt(2), counter_hit, FALLING);
 }
 
 void loop() {
-  //String abc[100] = {"A", "Ä", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "Ö", "P", "Q", "R", "S", "T", "U", "Ü", "V", "W", "X", "Y", "Z", "a", "ä", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "ö", "p", "q", "r", "s", "t", "u", "ü", "v", "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "@", "[", "]", "^", "_", "`", "{", "|", "}", "~", " ", "°"} ;
-  //for(int i = 0; i < 8; i++) {
-    //Serial.print(zahlenreihe[i]);
-    //Serial.print(",");
-  //}
-  //Serial.println(" ");
+  
 }
 
 void counter_hit() {
+  
+  int storage;
+  String zwischenergebnis;
 
   digitalWrite(3,HIGH);
 
-  //lcd.clear();
-  //lcd.setCursor(0,0);
-  //lcd.print("Berechnung läuft");
-  //String zahlenreihe[8];
-  
-  //Serial.print("millis: ");
-  //Serial.print(millis()); //ln
-
   zeit = millis() - milliseks;
-  //Serial.print("zeit: ");
-  //Serial.print(zeit); //ln
-  milliseks = millis();
-  storage = zeit % 100;
+    milliseks = millis();
 
-  if (storage < 10) {
-    zwischenergebnis = String(0) + String(storage);
-  }
+    if (zeit != 0){
+      storage = zeit % 100;
 
-  else {
-    zwischenergebnis = String(storage);
-  }
-
-  //Serial.print("index: ");
-  //Serial.println( index);
-
-  zahlenreihe[index] = zwischenergebnis;
-  index = (index + 1) % 8;
-
-  //Serial.print("index: ");
-  //Serial.println( index);
-
-  Serial.print("X");
-
-  for(int i = 0; i < 8; i++) {
-    Serial.print(zahlenreihe[i]);
-    //Serial.print(",");
-  }
-
-  Serial.println(" "); //ln
-
-  
-
-  if (index == 0){
-
-    for(int i = 0; i < 8; i++) {
-    write_data(zahlenreihe[i]);
-    zahlenreihe[i] = "";
-    //lcd.setCursor(i*2,1);
-    //lcd.print(zahlenreihe[i]);
+      if (storage < 10) {
+        zwischenergebnis = String(0) + String(storage);
+      }
+      else {
+        zwischenergebnis = String(storage);
+      }
+      zahlenreihe[index] = zwischenergebnis;
+      index = (index + 1) % 8;
     }
-  }
 
+  if (digitalRead(6) == 1) && laenge > 0{
+    
+    if (index == 0){
+    
+      for(int i = 0; i < 8; i++) {
+        write_data(zahlenreihe[i]);
+        Serial.print(zahlenreihe[i]);
+        zahlenreihe[i] = "";
+        laenge = laenge - 8;
+      }
+      Serial.println("X");
+    }
+    
+  }
+  else {
+    Serial.println("OFF");
+  }
   digitalWrite(3,LOW);
 }
+
+
 
 void write_data(String Zahl) {
 
   digitalWrite(4,HIGH);
-
   String Daten = String(Zahl); 
   File Datei = SD.open("speicher.txt", FILE_WRITE);
 
   if (Datei) {
       Datei.print(Daten);
       Datei.close();
-      Serial.println(Daten); //ln
+      //Serial.println(Daten);
     
   } else {
-      //lcd.clear();
-      //lcd.setCursor(0,0);
-      //lcd.print("Fehler beim");
-      //lcd.setCursor(0,1);
-      //lcd.print("Offnen der Datei");
-      Serial.println("Fehler beim Öffnen der Datei!"); //ln
+      Serial.println("Fehler beim Öffnen der Datei!");
   }
-
   digitalWrite(4,LOW);
-
 }
